@@ -343,32 +343,65 @@
       text-align: center;
     }
 
+    .exam-brief, .knowledge-panel {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+      overflow: hidden;
+    }
+
+    .exam-brief summary, .knowledge-panel summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .exam-brief ul {
+      margin: 0;
+      padding: 0 18px 14px 32px;
+      color: var(--muted);
+    }
+
     @media (max-width: 840px) {
       .topbar { grid-template-columns: 1fr; }
       .layout { grid-template-columns: 1fr; }
       aside { position: static; }
+      .content { order: 1; }
+      aside { order: 2; }
       .section-title { align-items: flex-start; flex-direction: column; }
     }
 
     @media (max-width: 560px) {
       body { font-size: 16px; }
-      .topbar { padding: 22px 16px 18px; }
-      h1 { font-size: 28px; }
-      .subtitle { font-size: 14px; }
-      .score-rule { width: 100%; min-width: 0; }
-      main { padding: 14px 10px 22px; }
+      header { display: none; }
+      main {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 8px 18px;
+      }
+      .layout { order: 1; }
       .toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        padding: 10px 0;
+        order: 2;
+        position: static;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 10px 0 0;
         background: var(--paper);
       }
-      .tabs, .toolbar select, .toolbar button {
+      .tabs, .toolbar select {
+        grid-column: 1 / -1;
+      }
+      .toolbar select, .toolbar button {
         width: 100%;
       }
       .tabs button {
         flex: 1;
+      }
+      .section-title {
+        display: none;
       }
       aside {
         display: grid;
@@ -397,6 +430,8 @@
       .score-big { font-size: 28px; }
       .bank-grid {
         grid-template-columns: 1fr;
+        max-height: 55vh;
+        overflow: auto;
       }
       .progress-row {
         flex-direction: column;
@@ -451,8 +486,22 @@
           <div class="hint" id="sourceHint">来源：exam info · exercises/solutions · PPT · pdbmbook.com</div>
         </div>
         <div id="resultBox" class="result-box"></div>
-        <div id="chapterOverview" class="bank-grid" hidden></div>
         <div id="questions"></div>
+        <details class="exam-brief">
+          <summary>考试信息与高频重点 / Exam Info & Focus</summary>
+          <ul>
+            <li>30 道选择题，每题 4 个选项；考试 3 小时；错题 guess correction 为 -1/3。</li>
+            <li>理论与练习大约 60% / 40%；课堂做过的练习很可能会考。</li>
+            <li>SQL 题会给 purchase order database 的 DDL；重点包括 correlated query、(NOT) EXISTS、ALL/ANY。</li>
+            <li>关系模型重点：cardinality 如何映射、foreign key 是否 NULL/NOT NULL。</li>
+            <li>Q&A 重点：ternary relationship 会丢语义、OCL declarative constraints、UML aggregation vs EER aggregation、normalization forms。</li>
+            <li>Guest lecture 不考；答题时要看清 CORRECT / NOT CORRECT。</li>
+          </ul>
+        </details>
+        <details id="knowledgePanel" class="knowledge-panel">
+          <summary>知识地图 / Knowledge Map</summary>
+          <div id="chapterOverview" class="bank-grid"></div>
+        </details>
       </section>
     </div>
   </main>
@@ -5106,7 +5155,7 @@
           els.resultBox.classList.remove("show");
           if (state.mode === "bank") {
             render();
-            window.setTimeout(() => goToQuestion(1, currentQuestions()), 900);
+            window.setTimeout(() => goToQuestion(1, currentQuestions()), 1300);
           } else {
             goToQuestion(1, questions);
           }
@@ -5153,7 +5202,6 @@
       els.modeHint.textContent = state.mode === "exam"
         ? "随机 30 题；原始分按 20 分制换算，提交后显示得分和解析。"
         : "可按章节筛选，随时检查答案。";
-      els.chapterOverview.hidden = state.mode !== "bank";
       els.chapterOverview.querySelectorAll(".chapter-tile").forEach(tile => {
         tile.classList.toggle("active", decodeURIComponent(tile.dataset.chapter) === els.chapterFilter.value);
       });
