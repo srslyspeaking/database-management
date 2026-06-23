@@ -344,6 +344,69 @@
     .chapter-tile strong { display: block; }
     .chapter-tile span { color: var(--muted); font-size: 13px; }
 
+    .toc-map {
+      display: grid;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+
+    .toc-part, .toc-chapter {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .toc-part > summary,
+    .toc-chapter > summary {
+      cursor: pointer;
+      padding: 11px 12px;
+      font-weight: 800;
+      color: var(--ink);
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .toc-part > summary {
+      background: #eef5fb;
+      color: var(--primary-dark);
+    }
+
+    .toc-chapter.active > summary {
+      background: #e9f2fb;
+      color: var(--primary-dark);
+    }
+
+    .toc-count {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .toc-body {
+      display: grid;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+
+    .toc-sections {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toc-sections li { margin: 4px 0; }
+
+    .toc-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
     .quiz-shell {
       display: grid;
       gap: 12px;
@@ -501,7 +564,7 @@
       </div>
       <div class="score-rule">
         <strong>评分规则</strong><br>
-        模拟考试随机 30 题。原始分：答对 +1，答错 -0.33，未答 0；最终换算为 20 分制。
+        模拟考试 30 题：约 18 道原练习题 + 12 道新题。答对 +1，答错 -0.33，未答 0；最终换算为 20 分制。
       </div>
     </div>
   </header>
@@ -517,6 +580,7 @@
       <button id="gradeBtn" type="button">交卷评分</button>
       <button id="showAnswersBtn" type="button">显示答案</button>
       <button id="shuffleOptionsBtn" type="button">随机选项</button>
+      <button id="wrongReviewBtn" type="button">错题重练</button>
       <button id="resetBtn" class="ghost" type="button">清空作答</button>
     </div>
 
@@ -5047,24 +5111,21 @@
       ]},
     ];
 
-
-    const COMMON_DISTRACTORS = [
-      "它主要用于替代所有业务需求分析。 / It mainly replaces all business requirements analysis.",
-      "它只影响界面颜色，不影响数据结构或数据管理。 / It only affects interface colors, not data structures or data management.",
-      "它表示系统不再需要一致性、安全性或性能设计。 / It means the system no longer needs consistency, security, or performance design.",
-      "它只适用于单用户文本文件，不适用于数据库系统。 / It applies only to single-user text files, not database systems.",
-      "它的主要作用是删除所有元数据和约束。 / Its main role is to remove all metadata and constraints.",
-      "它保证任何查询都不需要索引、事务或优化。 / It guarantees that no query needs indexes, transactions, or optimization."
-    ];
-
     function buildBilingualQuestionBank() {
       const bank = [];
+      const allConcepts = BILINGUAL_CHAPTER_CONCEPTS.flatMap((chapter, chapterIndex) =>
+        chapter.concepts.map(([term, definition], conceptIndex) => ({ chapterIndex, conceptIndex, term, definition }))
+      );
       BILINGUAL_CHAPTER_CONCEPTS.forEach((chapter, chapterIndex) => {
         chapter.concepts.forEach(([term, definition], conceptIndex) => {
-          const distractors = [0, 1, 2].map(offset => {
-            const pick = (chapterIndex * 7 + conceptIndex * 3 + offset) % COMMON_DISTRACTORS.length;
-            return COMMON_DISTRACTORS[pick];
-          });
+          const nearby = allConcepts
+            .filter(item => item.term !== term)
+            .map(item => ({
+              ...item,
+              distance: Math.abs(item.chapterIndex - chapterIndex) * 100 + Math.abs(item.conceptIndex - conceptIndex)
+            }))
+            .sort((a, b) => a.distance - b.distance || a.term.localeCompare(b.term));
+          const distractors = nearby.slice(0, 3).map(item => `${item.definition}。`);
           bank.push({
             chapter: chapter.chapter,
             q: `关于“${term}”，哪项说法正确？ / Which statement about "${term}" is correct?`,
@@ -5073,7 +5134,8 @@
               ...distractors
             ],
             answer: [0],
-            exp: `答案说明 / Explanation: ${definition}。`
+            exp: `答案说明 / Explanation: ${definition}。`,
+            kind: "generated"
           });
         });
       });
@@ -5115,6 +5177,68 @@
       };
     });
 
+    const BOOK_TOC = [
+      {
+        part: "Part 1: Databases and Database Design",
+        chapters: [
+          { index: 1, title: "Chapter 1: Fundamental Concepts of Database Management", zh: "第一章 数据库管理的基本概念", sections: ["Applications of Database Technology", "Key Definitions", "File versus Database Approach", "Elements of a Database System", "Advantages of Database Systems and Database Management"] },
+          { index: 2, title: "Chapter 2: Architecture and Categorization of DBMSs", zh: "第二章 数据库体系结构和分类", sections: ["Architecture of a DBMS", "Connection and Security Manager", "DDL Compiler", "Query Processor", "Storage Manager", "Categorization of DBMSs"] },
+          { index: 3, title: "Chapter 3: Conceptual Data Modeling", zh: "第三章 概念数据建模", sections: ["Phases of Database Design", "Entity Relationship Model", "Enhanced Entity Relationship Model", "UML Class Diagram", "UML versus EER"] },
+          { index: 4, title: "Chapter 4: Organizational Aspects of Data Management", zh: "第四章 数据管理的组织层面", sections: ["Data Management", "Catalogs and Metadata", "Data Quality", "Data Governance", "Roles in Data Management"] },
+        ]
+      },
+      {
+        part: "Part 2: Types of Database Systems",
+        chapters: [
+          { index: 5, title: "Chapter 5: Legacy Databases", zh: "第五章 遗留数据库", sections: ["Hierarchical Model", "Codasyl Model"] },
+          { index: 6, title: "Chapter 6: Relational Databases: The Relational Model", zh: "第六章 关系数据库：关系模型", sections: ["Relational Model", "Types of Keys", "Relational Constraints", "Normalization", "Mapping ER/EER to the Relational Model"] },
+          { index: 7, title: "Chapter 7: Relational Databases: Structured Query Language (SQL)", zh: "第七章 SQL", sections: ["SQL DDL", "Referential Integrity Constraints", "SQL DML", "SQL Views", "SQL Indexes", "SQL for Metadata Management"] },
+          { index: 8, title: "Chapter 8: Object Oriented Databases and Object Persistence", zh: "第八章 面向对象数据库和持久性", sections: ["Basic OO Concepts", "Inheritance and Polymorphism", "Serialization", "OODBMS", "ODL/OQL", "Language Bindings"] },
+          { index: 9, title: "Chapter 9: Extended Relational Databases", zh: "第九章 扩展的关系数据库", sections: ["Active RDBMS Extensions", "Triggers", "Stored Procedures", "Object-relational Extensions", "UDTs/UDFs", "Recursive SQL Queries"] },
+          { index: 10, title: "Chapter 10: XML Databases", zh: "第十章 XML数据库", sections: ["XML Basic Concepts", "DTD and XML Schema", "Storage of XML Documents", "XML-Relational Mappings", "XQuery", "RDF and SPARQL", "Web Services"] },
+          { index: 11, title: "Chapter 11: NoSQL Databases", zh: "第十一章 NoSQL数据库", sections: ["NoSQL Movement", "Key-value Stores", "Consistent Hashing", "Eventual Consistency", "Document Stores", "Column-oriented Databases", "Graph Databases and Cypher"] },
+        ]
+      },
+      {
+        part: "Part 3: Physical Data Storage, Transaction Management and Database Access",
+        chapters: [
+          { index: 12, title: "Chapter 12: Physical File Organization and Indexing", zh: "第十二章 物理文件组织和索引", sections: ["Storage Hardware", "Record Organization", "Heap/Sequential/Hash File Organization", "Secondary Indexes", "B-Trees and B+-Trees"] },
+          { index: 13, title: "Chapter 13: Physical Database Organization", zh: "第十三章 物理数据库组织", sections: ["Tablespace", "Index Design", "Database Access Methods", "Join Implementations", "RAID", "Business Continuity"] },
+          { index: 14, title: "Chapter 14: Basics of Transaction Management", zh: "第十四章 事务管理基础", sections: ["Transactions and Lifecycle", "Logfile", "Recovery", "Concurrency Control", "Schedules", "Locking Protocols", "ACID Properties"] },
+          { index: 15, title: "Chapter 15: Accessing Databases and Database APIs", zh: "第十五章 访问数据库和数据库API", sections: ["Database System Architectures", "API Classification", "ODBC/OLE DB/ADO.NET/JDBC", "SQL Injection", "SQLJ", "ORM APIs", "Database Access on the Web"] },
+          { index: 16, title: "Chapter 16: Data Distribution and Distributed Transaction Management", zh: "第十六章 数据分发和分布式事务管理", sections: ["Distributed Databases", "Fragmentation", "Allocation and Replication", "Transparency", "Distributed Query Processing", "2PC", "CAP Theorem", "BASE Transactions"] },
+        ]
+      },
+      {
+        part: "Part 4: Data Warehousing, Data Governance and (Big) Data Analytics",
+        chapters: [
+          { index: 17, title: "Chapter 17: Data Warehousing and Business Intelligence", zh: "第十七章 数据仓库和商业智能", sections: ["Data Warehouse Definition", "Star/Snowflake/Fact Constellation", "ETL", "Data Marts", "Data Lakes", "Business Intelligence", "OLAP"] },
+          { index: 18, title: "Chapter 18: Data Integration, Data Quality and Data Governance", zh: "第十八章 数据集成、数据质量和数据治理", sections: ["Data and Process Integration", "Data Integration Patterns", "Enterprise Search", "Data Quality and MDM", "Data Governance", "DMBOK/COBIT/ITIL"] },
+          { index: 19, title: "Chapter 19: Big Data", zh: "第十九章 大数据", sections: ["5 V's of Big Data", "Hadoop", "Hadoop Stack", "SQL on Hadoop", "HBase", "Pig", "Hive", "Apache Spark"] },
+          { index: 20, title: "Chapter 20: Analytics", zh: "第二十章 分析技术", sections: ["Analytics Process Model", "Data Scientist Job Profile", "Data Preprocessing", "Predictive/Descriptive Analytics", "Social Network Analytics", "ROI of Analytics", "Privacy and Security"] },
+        ]
+      }
+    ];
+
+    const CHAPTER_NUMERAL_MAP = {
+      "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+      "十一": 11, "十二": 12, "十三": 13, "十四": 14, "十五": 15, "十六": 16, "十七": 17, "十八": 18, "十九": 19, "二十": 20
+    };
+
+    function officialChapterIndex(question) {
+      const chapter = question.chapter || "";
+      const zh = chapter.match(/第([一二三四五六七八九十]+)章/);
+      if (zh && CHAPTER_NUMERAL_MAP[zh[1]]) return CHAPTER_NUMERAL_MAP[zh[1]];
+      const lecture = chapter.match(/Lecture\s+(\d+)/i);
+      if (lecture) {
+        const map = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 6, 6: 7, 7: 7, 8: 17, 9: 18, 10: 14 };
+        return map[Number(lecture[1])] || null;
+      }
+      if (/Chapter 15/i.test(chapter)) return 15;
+      if (/Chapter 17/i.test(chapter)) return 17;
+      return null;
+    }
+
     const state = {
       mode: "exam",
       examQuestions: [],
@@ -5122,7 +5246,10 @@
       answers: new Map(),
       graded: false,
       showAnswers: false,
-      optionSeed: 0
+      optionSeed: 0,
+      tocChapter: null,
+      reviewActive: false,
+      reviewIds: []
     };
 
     function readSavedState() {
@@ -5145,6 +5272,9 @@
             showAnswers: parsed.s,
             currentIndex: parsed.i,
             optionSeed: parsed.o,
+            tocChapter: parsed.t,
+            reviewActive: parsed.r,
+            reviewIds: Array.isArray(parsed.w) ? parsed.w : [],
             examIds: Array.isArray(parsed.e) ? parsed.e : [],
             answers: Object.fromEntries(parsed.a.split(",").filter(Boolean).map(item => {
               const [key, value] = item.split(":");
@@ -5166,6 +5296,9 @@
         showAnswers: state.showAnswers,
         currentIndex: state.currentIndex,
         optionSeed: state.optionSeed,
+        tocChapter: state.tocChapter,
+        reviewActive: state.reviewActive,
+        reviewIds: state.reviewIds,
         examIds: state.examQuestions.map(question => question.id),
         answers: Object.fromEntries(state.answers)
       };
@@ -5180,6 +5313,9 @@
         s: payload.showAnswers,
         i: payload.currentIndex,
         o: payload.optionSeed,
+        t: payload.tocChapter,
+        r: payload.reviewActive,
+        w: payload.reviewIds,
         e: payload.examIds,
         a: Object.entries(payload.answers)
           .map(([key, value]) => `${key}:${(Array.isArray(value) ? value : [value]).join("+")}`)
@@ -5194,6 +5330,9 @@
       state.showAnswers = false;
       state.currentIndex = 0;
       state.optionSeed = 0;
+      state.tocChapter = null;
+      state.reviewActive = false;
+      state.reviewIds = [];
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch (error) {}
@@ -5208,6 +5347,7 @@
       gradeBtn: document.getElementById("gradeBtn"),
       showAnswersBtn: document.getElementById("showAnswersBtn"),
       shuffleOptionsBtn: document.getElementById("shuffleOptionsBtn"),
+      wrongReviewBtn: document.getElementById("wrongReviewBtn"),
       resetBtn: document.getElementById("resetBtn"),
       questions: document.getElementById("questions"),
       resultBox: document.getElementById("resultBox"),
@@ -5282,6 +5422,38 @@
       return a.length === b.length && a.every((value, index) => value === b[index]);
     }
 
+    function isStandardSingleChoice(question) {
+      return question.options.length === 4 && normalizeSelection(question.answer).length === 1;
+    }
+
+    function isOriginalExerciseQuestion(question) {
+      return question.kind === "source-mc" && isStandardSingleChoice(question);
+    }
+
+    function isNewExamQuestion(question) {
+      return question.kind !== "source-mc"
+        && question.kind !== "source-open"
+        && question.kind !== "source-preserved"
+        && isStandardSingleChoice(question);
+    }
+
+    function examEligiblePool() {
+      const selectedChapter = els.chapterFilter.value;
+      const base = selectedChapter === "all"
+        ? QUESTION_BANK
+        : QUESTION_BANK.filter(q => q.chapter === selectedChapter);
+      return base.filter(isStandardSingleChoice);
+    }
+
+    function uniqueQuestions(items) {
+      const seen = new Set();
+      return items.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+    }
+
     function buildChapterFilter() {
       const chapters = [...new Set(QUESTION_BANK.map(item => item.chapter))];
       els.chapterFilter.innerHTML = [
@@ -5289,35 +5461,78 @@
         ...chapters.map(chapter => `<option value="${chapter}">${chapter}</option>`)
       ].join("");
 
-      const counts = chapters.map(chapter => {
-        const count = QUESTION_BANK.filter(q => q.chapter === chapter).length;
-        const active = els.chapterFilter.value === chapter ? " active" : "";
-        return `<button class="chapter-tile${active}" type="button" data-chapter="${encodeURIComponent(chapter)}"><strong>${chapter}</strong><span>${count} 道题 · 点击进入 / Tap to practise</span></button>`;
-      });
-      els.chapterOverview.innerHTML = counts.join("");
-      els.chapterOverview.querySelectorAll(".chapter-tile").forEach(tile => {
-        tile.addEventListener("click", () => {
+      renderKnowledgeMap();
+    }
+
+    function questionsForOfficialChapter(index) {
+      return QUESTION_BANK.filter(question => officialChapterIndex(question) === index);
+    }
+
+    function renderKnowledgeMap() {
+      const html = BOOK_TOC.map((part, partIndex) => {
+        const chapters = part.chapters.map(chapter => {
+          const count = questionsForOfficialChapter(chapter.index).length;
+          const active = Number(state.tocChapter) === chapter.index ? " active" : "";
+          const open = Number(state.tocChapter) === chapter.index ? " open" : "";
+          const sections = chapter.sections.map(section => `<li>${section}</li>`).join("");
+          return `
+            <details class="toc-chapter${active}"${open}>
+              <summary>
+                <span>${chapter.title}<br>${chapter.zh}</span>
+                <span class="toc-count">${count} 题</span>
+              </summary>
+              <div class="toc-body">
+                <ul class="toc-sections">${sections}</ul>
+                <div class="toc-actions">
+                  <button type="button" class="primary toc-practice" data-official-chapter="${chapter.index}">练这一章 / Practise this chapter</button>
+                </div>
+              </div>
+            </details>
+          `;
+        }).join("");
+        return `
+          <details class="toc-part" ${partIndex === 0 || part.chapters.some(chapter => Number(state.tocChapter) === chapter.index) ? "open" : ""}>
+            <summary>${part.part}</summary>
+            <div class="toc-body">${chapters}</div>
+          </details>
+        `;
+      }).join("");
+      els.chapterOverview.className = "toc-map";
+      els.chapterOverview.innerHTML = html;
+      els.chapterOverview.querySelectorAll(".toc-practice").forEach(button => {
+        button.addEventListener("click", event => {
+          event.preventDefault();
           state.mode = "bank";
-          els.chapterFilter.value = decodeURIComponent(tile.dataset.chapter);
+          state.tocChapter = Number(button.dataset.officialChapter);
+          els.chapterFilter.value = "all";
           state.currentIndex = 0;
           state.graded = false;
           state.showAnswers = false;
+          state.reviewActive = false;
+          state.reviewIds = [];
           saveState();
           render();
+          window.scrollTo({ top: 0, behavior: "smooth" });
         });
       });
     }
 
     function newExam() {
-      const selectedChapter = els.chapterFilter.value;
-      const pool = selectedChapter === "all"
-        ? QUESTION_BANK
-        : QUESTION_BANK.filter(q => q.chapter === selectedChapter);
-      state.examQuestions = shuffle(pool).slice(0, Math.min(EXAM_QUESTION_COUNT, pool.length));
+      const pool = examEligiblePool();
+      const originalTarget = Math.round(EXAM_QUESTION_COUNT * 0.6);
+      const newTarget = EXAM_QUESTION_COUNT - originalTarget;
+      const originals = shuffle(pool.filter(isOriginalExerciseQuestion)).slice(0, originalTarget);
+      const newItems = shuffle(pool.filter(isNewExamQuestion)).slice(0, newTarget);
+      const selected = uniqueQuestions([...originals, ...newItems]);
+      const filler = shuffle(pool.filter(question => !selected.some(item => item.id === question.id)))
+        .slice(0, Math.max(0, EXAM_QUESTION_COUNT - selected.length));
+      state.examQuestions = shuffle(uniqueQuestions([...selected, ...filler])).slice(0, Math.min(EXAM_QUESTION_COUNT, pool.length));
       state.optionSeed = Date.now() + Math.floor(Math.random() * 1000000);
       state.currentIndex = 0;
       state.graded = false;
       state.showAnswers = false;
+      state.reviewActive = false;
+      state.reviewIds = [];
       state.answers.clear();
       saveState();
       render();
@@ -5330,9 +5545,32 @@
       state.currentIndex = 0;
       state.graded = false;
       state.showAnswers = false;
+      state.reviewActive = false;
+      state.reviewIds = [];
       if (state.mode === "exam") {
-        state.examQuestions = shuffle(currentQuestions()).slice(0, Math.min(EXAM_QUESTION_COUNT, currentQuestions().length));
+        newExam();
+        return;
       }
+      saveState();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function startWrongReview() {
+      const wrongIds = QUESTION_BANK
+        .filter(question => {
+          const selected = state.answers.get(question.id);
+          return normalizeSelection(selected).length > 0 && !sameSelection(selected, question.answer);
+        })
+        .map(question => question.id);
+      state.mode = "bank";
+      state.reviewActive = true;
+      state.reviewIds = wrongIds;
+      state.currentIndex = 0;
+      state.graded = false;
+      state.showAnswers = false;
+      state.tocChapter = null;
+      els.chapterFilter.value = "all";
       saveState();
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5343,6 +5581,11 @@
       state.currentIndex = 0;
       state.graded = false;
       state.showAnswers = false;
+      if (mode === "exam") state.tocChapter = null;
+      if (mode === "exam") {
+        state.reviewActive = false;
+        state.reviewIds = [];
+      }
       if (mode === "exam" && state.examQuestions.length === 0) {
         newExam();
         return;
@@ -5353,7 +5596,14 @@
 
     function currentQuestions() {
       if (state.mode === "exam") return state.examQuestions;
+      if (state.mode === "bank" && state.reviewActive) {
+        const byId = new Map(QUESTION_BANK.map(question => [question.id, question]));
+        return state.reviewIds.map(id => byId.get(id)).filter(Boolean);
+      }
       const selectedChapter = els.chapterFilter.value;
+      if (state.mode === "bank" && state.tocChapter) {
+        return questionsForOfficialChapter(Number(state.tocChapter));
+      }
       return selectedChapter === "all"
         ? QUESTION_BANK
         : QUESTION_BANK.filter(q => q.chapter === selectedChapter);
@@ -5470,7 +5720,7 @@
               <span>${state.currentIndex + 1} / ${questions.length}</span>
             </div>
             <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
-            <div class="single-note">${state.mode === "bank" ? "选完会显示答案，然后自动跳到下一题 / Answer shows immediately, then moves on." : "选完直接进入下一题；交卷后看解析 / Pick an answer, then continue."}</div>
+            <div class="single-note">${state.mode === "bank" ? "选完会显示答案；按下一题继续 / Answer shows immediately; tap Next to continue." : "选完直接进入下一题；交卷后看解析 / Pick an answer, then continue."}</div>
           </div>
 
           <article class="question">
@@ -5512,7 +5762,6 @@
           els.resultBox.classList.remove("show");
           if (state.mode === "bank") {
             render();
-            window.setTimeout(() => goToQuestion(1, currentQuestions()), 1300);
           } else {
             goToQuestion(1, questions);
           }
@@ -5556,12 +5805,17 @@
       els.newExamBtn.hidden = state.mode !== "exam";
       els.gradeBtn.textContent = state.mode === "exam" ? "交卷评分" : "检查练习";
       els.modeTitle.textContent = state.mode === "exam" ? "模拟考试" : "题库练习";
+      const tocTitle = state.tocChapter
+        ? BOOK_TOC.flatMap(part => part.chapters).find(chapter => chapter.index === Number(state.tocChapter))
+        : null;
       els.modeHint.textContent = state.mode === "exam"
-        ? "随机 30 题；原始分按 20 分制换算，提交后显示得分和解析。"
-        : "可按章节筛选，随时检查答案。";
-      els.chapterOverview.querySelectorAll(".chapter-tile").forEach(tile => {
-        tile.classList.toggle("active", decodeURIComponent(tile.dataset.chapter) === els.chapterFilter.value);
-      });
+        ? "随机 30 题；按 exam info 约 60% 原练习题、40% 新题抽取；原始分换算为 20 分制。"
+        : state.reviewActive
+          ? `错题重练：当前 ${state.reviewIds.length} 道错题。`
+          : tocTitle
+          ? `官方目录筛选：${tocTitle.zh} / ${tocTitle.title}。选完显示答案，需要手动下一题。`
+          : "可按章节筛选，选完立即显示答案；需要手动进入下一题。";
+      renderKnowledgeMap();
 
       const questions = currentQuestions();
       renderStats(questions);
@@ -5579,11 +5833,15 @@
       render();
     });
     els.shuffleOptionsBtn.addEventListener("click", randomizeOptions);
+    els.wrongReviewBtn.addEventListener("click", startWrongReview);
     els.resetBtn.addEventListener("click", () => {
       clearSavedState();
       render();
     });
     els.chapterFilter.addEventListener("change", () => {
+      state.tocChapter = null;
+      state.reviewActive = false;
+      state.reviewIds = [];
       if (state.mode === "exam") newExam();
       else {
         state.currentIndex = 0;
@@ -5612,6 +5870,13 @@
     }
     if (Number.isFinite(Number(savedState.optionSeed))) {
       state.optionSeed = Number(savedState.optionSeed);
+    }
+    if (Number.isFinite(Number(savedState.tocChapter))) {
+      state.tocChapter = Number(savedState.tocChapter);
+    }
+    state.reviewActive = Boolean(savedState.reviewActive);
+    if (Array.isArray(savedState.reviewIds)) {
+      state.reviewIds = savedState.reviewIds;
     }
     state.graded = Boolean(savedState.graded);
     state.showAnswers = Boolean(savedState.showAnswers);
