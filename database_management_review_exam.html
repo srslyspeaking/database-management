@@ -227,6 +227,14 @@
     }
 
     label.option:hover { border-color: #aebbd0; }
+    label.option.correct-option {
+      border-color: rgba(22, 121, 76, .55);
+      background: #eefaf4;
+    }
+    label.option.wrong-option {
+      border-color: rgba(180, 35, 24, .55);
+      background: #fff2f1;
+    }
     input[type="radio"] { margin-top: 4px; }
 
     .answer {
@@ -282,6 +290,53 @@
       aside { position: static; }
       .section-title { align-items: flex-start; flex-direction: column; }
     }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      .topbar { padding: 22px 16px 18px; }
+      h1 { font-size: 28px; }
+      .subtitle { font-size: 14px; }
+      .score-rule { width: 100%; min-width: 0; }
+      main { padding: 14px 10px 22px; }
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        padding: 10px 0;
+        background: var(--paper);
+      }
+      .tabs, .toolbar select, .toolbar button {
+        width: 100%;
+      }
+      .tabs button {
+        flex: 1;
+      }
+      aside {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 12px;
+        padding: 12px;
+      }
+      .content { padding: 12px; }
+      .question {
+        padding: 13px 11px;
+        margin: 10px 0;
+      }
+      .q-title {
+        font-size: 16px;
+        line-height: 1.45;
+      }
+      label.option {
+        grid-template-columns: 30px 1fr;
+        padding: 12px 10px;
+        min-height: 52px;
+      }
+      input[type="radio"] {
+        width: 20px;
+        height: 20px;
+      }
+      .score-big { font-size: 28px; }
+    }
   </style>
 </head>
 <body>
@@ -293,7 +348,7 @@
       </div>
       <div class="score-rule">
         <strong>评分规则</strong><br>
-        答对 +1 分，答错 -0.33 分，未答 0 分。模拟考试随机 20 题，满分 20。
+        模拟考试随机 30 题。原始分：答对 +1，答错 -0.33，未答 0；最终换算为 20 分制。
       </div>
     </div>
   </header>
@@ -305,7 +360,7 @@
         <button id="tabBank" type="button">题库练习</button>
       </div>
       <select id="chapterFilter" aria-label="章节筛选"></select>
-      <button id="newExamBtn" class="primary" type="button">生成 20 题模拟卷</button>
+      <button id="newExamBtn" class="primary" type="button">生成 30 题模拟卷</button>
       <button id="gradeBtn" type="button">交卷评分</button>
       <button id="showAnswersBtn" type="button">显示答案</button>
       <button id="resetBtn" class="ghost" type="button">清空作答</button>
@@ -325,7 +380,7 @@
         <div class="section-title">
           <div>
             <h2 id="modeTitle">模拟考试</h2>
-            <div class="hint" id="modeHint">随机 20 题；提交后显示得分和解析。</div>
+            <div class="hint" id="modeHint">随机 30 题；原始分按 20 分制换算，提交后显示得分和解析。</div>
           </div>
           <div class="hint" id="sourceHint">来源：20 个 PowerPoint 章节文本 · 中英双语题库</div>
         </div>
@@ -337,6 +392,10 @@
   </main>
 
   <script>
+    const EXAM_QUESTION_COUNT = 30;
+    const EXAM_MAX_SCORE = 20;
+    const STORAGE_KEY = "databaseManagementReviewExam.v3";
+
     const BILINGUAL_CHAPTER_CONCEPTS = [
       { chapter: "第一章 数据库管理的基本概念", concepts: [
         ["数据库 / Database", "特定业务流程或问题情境中相关数据的集合 / a collection of related data for a business process or problem setting"],
@@ -834,6 +893,7 @@
       const shuffled = seededShuffle(keyedOptions, index);
       return {
         ...question,
+        id: `q${String(index + 1).padStart(3, "0")}`,
         options: shuffled.map(option => option.text),
         answer: shuffled.findIndex(option => option.isCorrect)
       };
@@ -842,11 +902,75 @@
     const state = {
       mode: "exam",
       examQuestions: [],
-      visibleQuestions: [],
       answers: new Map(),
       graded: false,
       showAnswers: false
     };
+
+    function readSavedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (error) {}
+
+      const cookie = document.cookie
+        .split("; ")
+        .find(item => item.startsWith(`${STORAGE_KEY}=`));
+      if (!cookie) return {};
+      try {
+        const parsed = JSON.parse(decodeURIComponent(cookie.split("=").slice(1).join("=")));
+        if (parsed && typeof parsed === "object" && typeof parsed.a === "string") {
+          return {
+            mode: parsed.m,
+            chapter: parsed.c,
+            graded: parsed.g,
+            showAnswers: parsed.s,
+            examIds: Array.isArray(parsed.e) ? parsed.e : [],
+            answers: Object.fromEntries(parsed.a.split(",").filter(Boolean).map(item => {
+              const [key, value] = item.split(":");
+              return [key, Number(value)];
+            }))
+          };
+        }
+        return parsed;
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveState() {
+      const payload = {
+        mode: state.mode,
+        chapter: els.chapterFilter?.value || "all",
+        graded: state.graded,
+        showAnswers: state.showAnswers,
+        examIds: state.examQuestions.map(question => question.id),
+        answers: Object.fromEntries(state.answers)
+      };
+      const encoded = JSON.stringify(payload);
+      try {
+        localStorage.setItem(STORAGE_KEY, encoded);
+      } catch (error) {}
+      const compactCookie = {
+        m: payload.mode,
+        c: payload.chapter,
+        g: payload.graded,
+        s: payload.showAnswers,
+        e: payload.examIds,
+        a: Object.entries(payload.answers).map(([key, value]) => `${key}:${value}`).join(",")
+      };
+      document.cookie = `${STORAGE_KEY}=${encodeURIComponent(JSON.stringify(compactCookie))}; max-age=31536000; path=/; SameSite=Lax`;
+    }
+
+    function clearSavedState() {
+      state.answers.clear();
+      state.graded = false;
+      state.showAnswers = false;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {}
+      document.cookie = `${STORAGE_KEY}=; max-age=0; path=/; SameSite=Lax`;
+    }
 
     const els = {
       tabExam: document.getElementById("tabExam"),
@@ -901,22 +1025,22 @@
       const pool = selectedChapter === "all"
         ? QUESTION_BANK
         : QUESTION_BANK.filter(q => q.chapter === selectedChapter);
-      state.examQuestions = shuffle(pool).slice(0, Math.min(20, pool.length));
-      state.answers.clear();
+      state.examQuestions = shuffle(pool).slice(0, Math.min(EXAM_QUESTION_COUNT, pool.length));
       state.graded = false;
       state.showAnswers = false;
+      saveState();
       render();
     }
 
     function setMode(mode) {
       state.mode = mode;
-      state.answers.clear();
       state.graded = false;
       state.showAnswers = false;
       if (mode === "exam" && state.examQuestions.length === 0) {
         newExam();
         return;
       }
+      saveState();
       render();
     }
 
@@ -931,6 +1055,7 @@
     function grade() {
       state.graded = true;
       state.showAnswers = true;
+      saveState();
       render();
     }
 
@@ -938,8 +1063,8 @@
       let correct = 0;
       let wrong = 0;
       let unanswered = 0;
-      questions.forEach((question, index) => {
-        const selected = state.answers.get(index);
+      questions.forEach((question) => {
+        const selected = state.answers.get(question.id);
         if (selected === undefined) unanswered += 1;
         else if (selected === question.answer) correct += 1;
         else wrong += 1;
@@ -949,18 +1074,25 @@
         wrong,
         unanswered,
         answered: correct + wrong,
-        score: correct - wrong * 0.33
+        rawScore: correct - wrong * 0.33
       };
+    }
+
+    function displayedScore(stats, questions) {
+      if (state.mode !== "exam") return stats.rawScore;
+      const maxRaw = Math.max(questions.length, 1);
+      return stats.rawScore * EXAM_MAX_SCORE / maxRaw;
     }
 
     function renderStats(questions) {
       const stats = computeStats(questions);
+      const revealStats = state.graded || state.mode === "bank";
       els.totalCount.textContent = QUESTION_BANK.length;
       els.currentCount.textContent = questions.length;
       els.answeredCount.textContent = stats.answered;
-      els.correctCount.textContent = state.graded ? stats.correct : "-";
-      els.wrongCount.textContent = state.graded ? stats.wrong : "-";
-      els.scoreCount.textContent = state.graded ? stats.score.toFixed(2) : "-";
+      els.correctCount.textContent = revealStats ? stats.correct : "-";
+      els.wrongCount.textContent = revealStats ? stats.wrong : "-";
+      els.scoreCount.textContent = revealStats ? displayedScore(stats, questions).toFixed(2) : "-";
     }
 
     function renderResult(questions) {
@@ -970,19 +1102,24 @@
         return;
       }
       const stats = computeStats(questions);
-      const maxScore = state.mode === "exam" ? questions.length : questions.length;
+      const score = displayedScore(stats, questions);
+      const maxScore = state.mode === "exam" ? EXAM_MAX_SCORE : questions.length;
+      const examDetail = state.mode === "exam"
+        ? `<div class="hint">原始分 / Raw score: ${stats.rawScore.toFixed(2)} / ${questions.length}，换算公式 / Scaling: ${stats.rawScore.toFixed(2)} ÷ ${questions.length} × ${EXAM_MAX_SCORE} = ${score.toFixed(2)}。</div>`
+        : "";
       els.resultBox.innerHTML = `
-        <div class="score-big">${stats.score.toFixed(2)} / ${maxScore}</div>
+        <div class="score-big">${score.toFixed(2)} / ${maxScore}</div>
         <div>正确 ${stats.correct} 题，错误 ${stats.wrong} 题，未答 ${stats.unanswered} 题。</div>
-        <div class="hint">计分公式：${stats.correct} × 1 - ${stats.wrong} × 0.33 = ${stats.score.toFixed(2)}。未答不扣分。</div>
+        <div class="hint">计分公式 / Raw formula: ${stats.correct} × 1 - ${stats.wrong} × 0.33 = ${stats.rawScore.toFixed(2)}。未答不扣分 / Unanswered questions score 0.</div>
+        ${examDetail}
       `;
       els.resultBox.classList.add("show");
     }
 
     function renderQuestions(questions) {
       els.questions.innerHTML = questions.map((question, index) => {
-        const selected = state.answers.get(index);
-        const answerVisible = state.showAnswers || state.graded;
+        const selected = state.answers.get(question.id);
+        const answerVisible = state.showAnswers || state.graded || (state.mode === "bank" && selected !== undefined);
         const status = selected === undefined
           ? '<span class="warn">未答</span>'
           : selected === question.answer
@@ -990,8 +1127,13 @@
             : '<span class="wrong">错误</span>';
         const options = question.options.map((option, optionIndex) => {
           const checked = selected === optionIndex ? "checked" : "";
+          const optionClass = answerVisible && optionIndex === question.answer
+            ? " correct-option"
+            : answerVisible && selected === optionIndex && selected !== question.answer
+              ? " wrong-option"
+              : "";
           return `
-            <label class="option">
+            <label class="option${optionClass}">
               <input type="radio" name="q${index}" value="${optionIndex}" ${checked}>
               <span><strong>${optionLetter(optionIndex)}.</strong> ${option}</span>
             </label>
@@ -1003,10 +1145,10 @@
             <div class="q-meta">
               <span class="tag">${question.chapter}</span>
               <span>第 ${index + 1} 题</span>
-              ${state.graded ? `<span>${status}</span>` : ""}
+              ${answerVisible ? `<span>${status}</span>` : ""}
             </div>
             <div class="q-title">${question.q}</div>
-            <div class="options" data-question="${index}">${options}</div>
+            <div class="options" data-question-id="${question.id}">${options}</div>
             <div class="answer ${answerVisible ? "show" : ""}">
               <strong>答案：${optionLetter(question.answer)}.</strong> ${question.options[question.answer]}<br>
               <span class="hint">${question.exp}</span>
@@ -1018,10 +1160,17 @@
       els.questions.querySelectorAll('input[type="radio"]').forEach(input => {
         input.addEventListener("change", event => {
           const wrapper = event.target.closest(".options");
-          state.answers.set(Number(wrapper.dataset.question), Number(event.target.value));
-          state.graded = false;
+          state.answers.set(wrapper.dataset.questionId, Number(event.target.value));
+          if (state.mode === "bank") {
+            state.graded = false;
+            state.showAnswers = false;
+          } else {
+            state.graded = false;
+          }
+          saveState();
           renderStats(questions);
           els.resultBox.classList.remove("show");
+          if (state.mode === "bank") render();
         });
       });
     }
@@ -1033,12 +1182,11 @@
       els.gradeBtn.textContent = state.mode === "exam" ? "交卷评分" : "检查练习";
       els.modeTitle.textContent = state.mode === "exam" ? "模拟考试" : "题库练习";
       els.modeHint.textContent = state.mode === "exam"
-        ? "随机 20 题；提交后显示得分和解析。"
+        ? "随机 30 题；原始分按 20 分制换算，提交后显示得分和解析。"
         : "可按章节筛选，随时检查答案。";
       els.chapterOverview.hidden = state.mode !== "bank";
 
       const questions = currentQuestions();
-      state.visibleQuestions = questions;
       renderStats(questions);
       renderResult(questions);
       renderQuestions(questions);
@@ -1050,26 +1198,43 @@
     els.gradeBtn.addEventListener("click", grade);
     els.showAnswersBtn.addEventListener("click", () => {
       state.showAnswers = !state.showAnswers;
+      saveState();
       render();
     });
     els.resetBtn.addEventListener("click", () => {
-      state.answers.clear();
-      state.graded = false;
-      state.showAnswers = false;
+      clearSavedState();
       render();
     });
     els.chapterFilter.addEventListener("change", () => {
       if (state.mode === "exam") newExam();
       else {
-        state.answers.clear();
         state.graded = false;
         state.showAnswers = false;
+        saveState();
         render();
       }
     });
 
     buildChapterFilter();
-    newExam();
+    const savedState = readSavedState();
+    if (savedState.answers && typeof savedState.answers === "object") {
+      state.answers = new Map(Object.entries(savedState.answers).map(([key, value]) => [key, Number(value)]));
+    }
+    if (savedState.mode === "bank" || savedState.mode === "exam") state.mode = savedState.mode;
+    if (savedState.chapter && [...els.chapterFilter.options].some(option => option.value === savedState.chapter)) {
+      els.chapterFilter.value = savedState.chapter;
+    }
+    if (Array.isArray(savedState.examIds)) {
+      const byId = new Map(QUESTION_BANK.map(question => [question.id, question]));
+      state.examQuestions = savedState.examIds.map(id => byId.get(id)).filter(Boolean);
+    }
+    state.graded = Boolean(savedState.graded);
+    state.showAnswers = Boolean(savedState.showAnswers);
+    if (state.mode === "exam" && state.examQuestions.length === 0) {
+      newExam();
+    } else {
+      render();
+    }
   </script>
 </body>
 </html>
