@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Database Management 复习考试</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #657282;
+      --line: #d8dee7;
+      --paper: #f6f8fb;
+      --panel: #ffffff;
+      --primary: #145da0;
+      --primary-dark: #0e4478;
+      --accent: #d17a22;
+      --good: #16794c;
+      --bad: #b42318;
+      --warn: #8a5a00;
+      --shadow: 0 14px 34px rgba(23, 33, 43, .08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    header {
+      background: #0f2437;
+      color: white;
+      border-bottom: 5px solid var(--accent);
+    }
+
+    .topbar {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 22px 24px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 4vw, 42px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: #c8d3df;
+      max-width: 760px;
+    }
+
+    .score-rule {
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 8px;
+      padding: 12px 14px;
+      min-width: 210px;
+      color: #edf4fb;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    button, select {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: white;
+      color: var(--ink);
+      padding: 8px 12px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 650;
+    }
+
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    button.primary:hover { background: var(--primary-dark); }
+    button.ghost { background: transparent; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+
+    .tabs {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .tabs button {
+      border: 0;
+      border-radius: 0;
+      border-right: 1px solid var(--line);
+    }
+
+    .tabs button:last-child { border-right: 0; }
+    .tabs button.active {
+      background: #e9f2fb;
+      color: var(--primary-dark);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    aside, .content {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    aside {
+      position: sticky;
+      top: 12px;
+      padding: 16px;
+    }
+
+    .stat {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 9px 0;
+      border-bottom: 1px solid #edf0f4;
+    }
+
+    .stat:last-child { border-bottom: 0; }
+    .stat span:first-child { color: var(--muted); }
+    .stat strong { font-size: 18px; }
+
+    .content { padding: 18px; }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .hint { color: var(--muted); }
+
+    .question {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 12px 0;
+      background: #fff;
+    }
+
+    .q-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef3f8;
+      color: #445468;
+    }
+
+    .q-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .options {
+      display: grid;
+      gap: 8px;
+    }
+
+    label.option {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 9px 10px;
+      border: 1px solid #e2e7ef;
+      border-radius: 7px;
+      cursor: pointer;
+      background: #fbfcfe;
+    }
+
+    label.option:hover { border-color: #aebbd0; }
+    input[type="radio"] { margin-top: 4px; }
+
+    .answer {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 7px;
+      background: #f2f6fa;
+      display: none;
+    }
+
+    .answer.show { display: block; }
+    .correct { color: var(--good); font-weight: 700; }
+    .wrong { color: var(--bad); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+
+    .result-box {
+      display: none;
+      margin: 12px 0 16px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+
+    .result-box.show { display: block; }
+    .score-big {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      line-height: 1.1;
+    }
+
+    .bank-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .chapter-tile {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #fbfcfe;
+    }
+
+    .chapter-tile strong { display: block; }
+    .chapter-tile span { color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 840px) {
+      .topbar { grid-template-columns: 1fr; }
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static; }
+      .section-title { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>Database Management 复习考试</h1>
+        <div class="subtitle">基于 Downloads 最新课件文件夹 PDBM_Slides_PPT_ZH 生成，覆盖数据库基础、建模、关系数据库、SQL、XML、NoSQL、事务、分布式、大数据、治理与分析等章节。</div>
+      </div>
+      <div class="score-rule">
+        <strong>评分规则</strong><br>
+        答对 +1 分，答错 -0.33 分，未答 0 分。模拟考试随机 20 题，满分 20。
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="tabs" aria-label="模式选择">
+        <button id="tabExam" class="active" type="button">模拟考试</button>
+        <button id="tabBank" type="button">题库练习</button>
+      </div>
+      <select id="chapterFilter" aria-label="章节筛选"></select>
+      <button id="newExamBtn" class="primary" type="button">生成 20 题模拟卷</button>
+      <button id="gradeBtn" type="button">交卷评分</button>
+      <button id="showAnswersBtn" type="button">显示答案</button>
+      <button id="resetBtn" class="ghost" type="button">清空作答</button>
+    </div>
+
+    <div class="layout">
+      <aside>
+        <div class="stat"><span>题库总量</span><strong id="totalCount">0</strong></div>
+        <div class="stat"><span>当前题数</span><strong id="currentCount">0</strong></div>
+        <div class="stat"><span>已答</span><strong id="answeredCount">0</strong></div>
+        <div class="stat"><span>正确</span><strong id="correctCount">-</strong></div>
+        <div class="stat"><span>错误</span><strong id="wrongCount">-</strong></div>
+        <div class="stat"><span>得分</span><strong id="scoreCount">-</strong></div>
+      </aside>
+
+      <section class="content">
+        <div class="section-title">
+          <div>
+            <h2 id="modeTitle">模拟考试</h2>
+            <div class="hint" id="modeHint">随机 20 题；提交后显示得分和解析。</div>
+          </div>
+          <div class="hint" id="sourceHint">来源：20 个 PowerPoint 章节文本</div>
+        </div>
+        <div id="resultBox" class="result-box"></div>
+        <div id="chapterOverview" class="bank-grid" hidden></div>
+        <div id="questions"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const RAW_QUESTION_BANK = [
+      {chapter:"第一章 数据库管理的基本概念", q:"数据库管理系统（DBMS）的最准确描述是？", options:["用于定义、创建、使用和维护数据库的软件包","只用于绘制 E-R 图的软件","一种只保存文本文件的文件系统","用户访问操作系统的命令行工具"], answer:0, exp:"课件将 DBMS 定义为用于定义、创建、使用和维护数据库的软件包。"},
+      {chapter:"第一章 数据库管理的基本概念", q:"文件系统方法相较数据库系统方法的典型局限是？", options:["数据重复、冗余和不一致风险较高","天然支持声明式 SQL 查询","应用程序与数据天然松耦合","无需处理并发控制"], answer:0, exp:"文件系统方法常见问题包括数据冗余、不一致、应用程序与数据强耦合，并发控制困难。"},
+      {chapter:"第一章 数据库管理的基本概念", q:"数据库模式与数据库状态的区别是？", options:["模式描述结构，状态表示某一时刻的实际数据","模式是当前数据，状态是长期不变的结构","二者完全相同","状态只描述索引，模式只描述用户"], answer:0, exp:"模式通常在设计期确定并较少变化；状态是某一时刻数据库中的实例集合。"},
+      {chapter:"第一章 数据库管理的基本概念", q:"外部数据模型也常被称为？", options:["视图","物理页","事务日志","候选键"], answer:0, exp:"外部数据模型针对特定应用或用户组的数据子集，也称为视图。"},
+      {chapter:"第二章 数据库体系结构和分类", q:"三层模式结构中，描述物理存储细节的是？", options:["内模式","概念模式","外模式","用户模式"], answer:0, exp:"内模式关注数据如何在物理层存储，如文件组织、索引和访问路径。"},
+      {chapter:"第二章 数据库体系结构和分类", q:"数据独立性的核心价值是？", options:["改变某一层设计时尽量减少对其他层和应用程序的影响","让所有用户看到完整数据库","删除数据字典","避免任何索引"], answer:0, exp:"数据独立性降低应用与数据表示之间的耦合。"},
+      {chapter:"第二章 数据库体系结构和分类", q:"集中式数据库系统的主要特征是？", options:["数据和 DBMS 通常集中在一个站点管理","每个数据项必须复制到所有站点","只能使用 XML 查询","不能有多个用户"], answer:0, exp:"集中式系统将数据库和管理功能集中部署，区别于分布式系统。"},
+      {chapter:"第二章 数据库体系结构和分类", q:"数据字典/目录主要保存什么？", options:["数据库元数据","用户的浏览器缓存","机器学习训练日志","操作系统内核"], answer:0, exp:"目录保存关于模式、约束、视图、权限等数据库元数据。"},
+      {chapter:"第三章 应用ER和UML构建概念数据模型", q:"E-R 建模中的实体通常表示？", options:["业务环境中可区分并需要保存数据的对象或概念","数据库中的物理磁盘块","SQL 查询的执行计划","一个事务的锁"], answer:0, exp:"实体是概念建模中具有业务意义、可区分的对象或概念。"},
+      {chapter:"第三章 应用ER和UML构建概念数据模型", q:"联系的基数约束用于表达什么？", options:["实体实例之间参与联系的数量限制","字段的字符编码","索引页大小","事务日志文件位置"], answer:0, exp:"基数约束说明一方实体可与另一方多少个实例关联。"},
+      {chapter:"第三章 应用ER和UML构建概念数据模型", q:"弱实体通常依赖什么来识别？", options:["拥有者实体及其识别联系","单独的全局唯一主键","XML 命名空间","数据库备份文件"], answer:0, exp:"弱实体没有足够的自身属性唯一识别，通常依赖拥有者实体。"},
+      {chapter:"第三章 应用ER和UML构建概念数据模型", q:"UML 类图中，类的属性最接近关系模型中的什么？", options:["关系表中的列/属性","事务隔离级别","磁盘页编号","网络协议端口"], answer:0, exp:"类属性描述对象特征，映射到关系模型时常对应表字段。"},
+      {chapter:"第四章 数据管理的组织层面", q:"数据管理的组织层面强调什么？", options:["角色、责任、政策和治理机制","只选择最快的硬盘","只写 SQL 查询","取消所有数据标准"], answer:0, exp:"组织层面关注数据治理、职责划分、标准、政策与管理流程。"},
+      {chapter:"第四章 数据管理的组织层面", q:"数据管理员与数据库管理员的职责差异通常是？", options:["前者偏数据资源治理，后者偏 DBMS 技术运维","前者只修电脑，后者只设计海报","二者没有任何区别","前者只负责云采购"], answer:0, exp:"数据管理员更关注组织数据资源，DBA 更关注数据库技术环境。"},
+      {chapter:"第四章 数据管理的组织层面", q:"制定数据标准的主要目的包括？", options:["提升一致性、共享性和可理解性","让同一字段在各系统随意命名","避免任何文档","替代所有备份"], answer:0, exp:"数据标准帮助跨系统统一含义、格式、命名和质量要求。"},
+      {chapter:"第五章 遗留数据库", q:"层次数据库模型的基本组织方式是？", options:["树形父子结构","无结构键值对","只由 XML 元素组成","完全基于对象继承"], answer:0, exp:"层次模型以树状父子记录组织数据。"},
+      {chapter:"第五章 遗留数据库", q:"网络数据库模型相对层次模型的一个特点是？", options:["允许更复杂的多对多记录联系","只能有一个根节点","不需要模式","只能处理图片"], answer:0, exp:"CODASYL/网络模型可通过集合类型表达更复杂关系。"},
+      {chapter:"第五章 遗留数据库", q:"遗留数据库系统迁移时最需要关注的是？", options:["业务规则、数据语义和接口依赖","只删除旧数据","忽略用户流程","直接换掉所有主键"], answer:0, exp:"遗留系统常包含隐含业务规则和历史接口，迁移需谨慎处理。"},
+      {chapter:"第六章 关系数据库", q:"关系模型中，关系的行通常称为？", options:["元组","域","视图定义","日志记录"], answer:0, exp:"关系由元组组成；列称为属性，属性取值来自域。"},
+      {chapter:"第六章 关系数据库", q:"主键的基本要求是？", options:["唯一标识关系中的元组且不能为空","可以重复且必须为空","只用于排序显示","必须由 10 个字段组成"], answer:0, exp:"主键应唯一、非空，用于标识每一行。"},
+      {chapter:"第六章 关系数据库", q:"外键主要用于实现什么约束？", options:["参照完整性","用户界面颜色","文件压缩率","事务超时时间"], answer:0, exp:"外键引用另一关系的候选键/主键，用于维护参照完整性。"},
+      {chapter:"第六章 关系数据库", q:"关系代数中的选择（selection）操作作用于？", options:["行，按条件过滤元组","列，删除属性名","数据库连接字符串","事务日志"], answer:0, exp:"选择根据谓词筛选关系中的元组；投影用于选择列。"},
+      {chapter:"第六章 关系数据库", q:"关系代数中的投影（projection）操作主要用于？", options:["选择需要保留的属性/列","锁定整张表","复制数据库","提交事务"], answer:0, exp:"投影返回指定属性集合，并通常去除重复元组。"},
+      {chapter:"第七章 关系数据库：结构查询语言（SQL）", q:"SQL 中用于查询数据的基本语句是？", options:["SELECT","COMMIT","GRANT","CREATE INDEX"], answer:0, exp:"SELECT 是 SQL 数据查询语言的核心语句。"},
+      {chapter:"第七章 关系数据库：结构查询语言（SQL）", q:"WHERE 子句的主要作用是？", options:["根据条件筛选行","定义表结构","排序查询结果","给用户授权"], answer:0, exp:"WHERE 指定过滤谓词，决定哪些元组进入结果。"},
+      {chapter:"第七章 关系数据库：结构查询语言（SQL）", q:"GROUP BY 通常与哪类表达式一起使用？", options:["聚合函数，如 COUNT、SUM、AVG","事务隔离级别","文件路径","用户密码"], answer:0, exp:"GROUP BY 将行分组后计算聚合。"},
+      {chapter:"第七章 关系数据库：结构查询语言（SQL）", q:"HAVING 与 WHERE 的主要区别是？", options:["HAVING 用于过滤分组后的结果","HAVING 只能创建表","WHERE 只能用于排序","二者完全等价"], answer:0, exp:"WHERE 在分组前过滤行，HAVING 在分组聚合后过滤组。"},
+      {chapter:"第七章 关系数据库：结构查询语言（SQL）", q:"SQL 连接（JOIN）的主要目的是什么？", options:["基于相关列组合多个表的数据","删除数据库目录","压缩图片","设置 CPU 核数"], answer:0, exp:"JOIN 根据连接条件将多个关系的数据组合在一个查询结果中。"},
+      {chapter:"第八章 面向对象的数据库和数据持久性", q:"对象持久性的含义是？", options:["对象在程序结束后仍能被保存并再次恢复","对象只能存在于内存中","对象不能包含方法","对象必须转换成文本"], answer:0, exp:"持久性使对象生命周期超越单次程序执行。"},
+      {chapter:"第八章 面向对象的数据库和数据持久性", q:"对象关系阻抗不匹配指的是？", options:["对象模型与关系模型在结构和操作方式上的差异","CPU 与硬盘速度差异","SQL 与 XML 拼写差异","备份与恢复时间差异"], answer:0, exp:"对象有身份、封装、继承等特征，关系模型以表和元组表达数据。"},
+      {chapter:"第八章 面向对象的数据库和数据持久性", q:"ORM 工具的主要用途是？", options:["在对象模型和关系数据库之间建立映射","生成网络拓扑图","替代所有事务控制","只管理图片文件"], answer:0, exp:"ORM 帮助应用对象与关系表之间进行映射和持久化。"},
+      {chapter:"第九章 扩展的关系数据库", q:"扩展关系数据库通常试图支持什么？", options:["更复杂的数据类型和对象关系特征","只支持纯文本字段","取消 SQL","只运行在单用户环境"], answer:0, exp:"扩展关系系统吸收对象、复杂类型、用户定义类型等能力。"},
+      {chapter:"第九章 扩展的关系数据库", q:"用户定义类型（UDT）的价值是？", options:["让数据库表达更贴近业务或复杂结构的数据类型","删除所有约束","让每个列只能保存整数","禁止函数"], answer:0, exp:"UDT 可扩展数据库类型系统，表达复杂业务对象。"},
+      {chapter:"第九章 扩展的关系数据库", q:"对象关系数据库保留关系模型的同时，通常加入？", options:["对象标识、复杂类型、继承或方法等能力","只加入键盘快捷键","只加入文件夹图标","只加入网页动画"], answer:0, exp:"对象关系模型在关系基础上加入部分对象数据库特征。"},
+      {chapter:"第十章 XML数据库", q:"XML 文档的主要结构特征是？", options:["由嵌套元素形成层次结构","只能保存固定长度记录","不能包含属性","必须是二进制格式"], answer:0, exp:"XML 使用标签和嵌套元素表达层次化、半结构化数据。"},
+      {chapter:"第十章 XML数据库", q:"DTD 或 XML Schema 的主要作用是？", options:["定义 XML 文档的允许结构和约束","执行事务回滚","建立 B+ 树索引","压缩视频"], answer:0, exp:"DTD/Schema 描述 XML 文档结构、元素、属性和约束。"},
+      {chapter:"第十章 XML数据库", q:"XPath 主要用于？", options:["在 XML 文档中定位节点","创建关系主键","提交分布式事务","生成磁盘镜像"], answer:0, exp:"XPath 是 XML 路径表达语言，用来选择节点或节点集。"},
+      {chapter:"第十章 XML数据库", q:"XQuery 主要面向哪类数据查询？", options:["XML 数据","纯操作系统进程","图像像素","网络路由表"], answer:0, exp:"XQuery 是面向 XML 数据集合的查询语言。"},
+      {chapter:"第十一章 NoSQL数据库", q:"NoSQL 数据库兴起的重要背景包括？", options:["大规模、分布式、灵活模式和高可扩展性需求","只为替代所有 SQL 语法","只服务单机小表","完全不需要一致性考虑"], answer:0, exp:"NoSQL 常用于大规模分布式环境和灵活数据模型场景。"},
+      {chapter:"第十一章 NoSQL数据库", q:"键值数据库的基本数据访问方式是？", options:["通过键查找对应的值","通过固定三范式连接所有表","只用 XPath","只读事务日志"], answer:0, exp:"键值存储以 key-value 映射为核心。"},
+      {chapter:"第十一章 NoSQL数据库", q:"文档数据库通常将数据保存为？", options:["JSON/BSON/XML 等文档结构","只保存单个整数","只保存位图","只保存事务锁"], answer:0, exp:"文档数据库以半结构化文档作为基本存储和查询单位。"},
+      {chapter:"第十一章 NoSQL数据库", q:"CAP 定理讨论的是分布式系统中哪三者的取舍？", options:["一致性、可用性、分区容忍性","成本、审计、性能","类、属性、包","列、行、视图"], answer:0, exp:"CAP 指 Consistency、Availability、Partition tolerance。"},
+      {chapter:"第十二章 物理文件组织和索引", q:"索引的主要目的是什么？", options:["加快数据检索，减少不必要扫描","保证所有字段永不为空","替代数据库备份","自动生成业务需求"], answer:0, exp:"索引提供访问路径，通常提升查询效率。"},
+      {chapter:"第十二章 物理文件组织和索引", q:"B+ 树索引的常见优势是？", options:["支持高效范围查询并保持较低树高","只能支持精确匹配且不能更新","只能用于 XML","不需要磁盘页"], answer:0, exp:"B+ 树平衡结构适合数据库页式存储和范围访问。"},
+      {chapter:"第十二章 物理文件组织和索引", q:"哈希索引更适合哪类查询？", options:["等值查找","范围排序","全文摘要","事务恢复"], answer:0, exp:"哈希通过哈希函数定位桶，适合等值查找，不擅长范围查询。"},
+      {chapter:"第十三章 物理数据库组织", q:"物理数据库设计重点考虑什么？", options:["存储结构、访问路径、索引和性能","只考虑屏幕字体","只考虑用户头像","只考虑课件页码"], answer:0, exp:"物理设计把逻辑设计映射为 DBMS 具体存储和访问结构。"},
+      {chapter:"第十三章 物理数据库组织", q:"数据库调优通常需要权衡什么？", options:["查询性能、更新成本、存储空间和维护复杂度","只增加索引数量","只删除约束","只改变表名"], answer:0, exp:"过多索引可加快读但增加写入和维护成本。"},
+      {chapter:"第十三章 物理数据库组织", q:"反规范化可能带来的风险是？", options:["冗余和更新异常增加","所有查询必然变慢","无法存储任何数据","自动消除数据重复"], answer:0, exp:"反规范化可能提升某些读取性能，但会增加冗余与一致性维护难度。"},
+      {chapter:"第十四章 事务管理基础", q:"事务的 ACID 特性中，原子性表示？", options:["事务操作要么全部完成，要么全部不发生","多个事务必须串行执行","数据必须永久加密","查询只能读取一行"], answer:0, exp:"原子性要求事务作为不可分割的工作单元提交或回滚。"},
+      {chapter:"第十四章 事务管理基础", q:"隔离性主要解决什么问题？", options:["并发事务相互干扰导致的不一致读写","磁盘空间不足","字段命名过长","网页布局错位"], answer:0, exp:"隔离性控制并发执行的可见性和相互影响。"},
+      {chapter:"第十四章 事务管理基础", q:"两阶段锁协议（2PL）的核心思想是？", options:["先获取锁的增长阶段，后释放锁的收缩阶段","每个事务只能用两把锁","所有锁都必须永久持有","只给 XML 节点加锁"], answer:0, exp:"2PL 将锁操作分为增长和收缩两个阶段，以保证可串行化。"},
+      {chapter:"第十四章 事务管理基础", q:"日志在事务恢复中的主要用途是？", options:["支持提交后的重做和未提交事务的撤销","替代查询优化器","保存用户界面主题","禁止并发"], answer:0, exp:"恢复日志记录更新前后信息，用于 undo/redo。"},
+      {chapter:"第十五章 访问数据库和数据库API", q:"ODBC/JDBC 这类数据库 API 的主要作用是？", options:["为应用程序访问 DBMS 提供标准接口","只负责数据库物理备份","生成 ER 图颜色","替代数据库权限"], answer:0, exp:"数据库 API 提供应用访问数据库的标准编程接口。"},
+      {chapter:"第十五章 访问数据库和数据库API", q:"预编译语句/参数化查询的重要价值是？", options:["减少 SQL 注入风险并可提升重复执行效率","强制删除索引","让所有字段变成 XML","取消事务"], answer:0, exp:"参数绑定把数据和值与 SQL 代码分离，有助于安全和效率。"},
+      {chapter:"第十五章 访问数据库和数据库API", q:"连接池的主要目的是什么？", options:["复用数据库连接，降低频繁建立连接的开销","把数据库复制到浏览器","删除空值","关闭所有并发"], answer:0, exp:"连接池管理可复用连接，提高应用访问数据库的效率。"},
+      {chapter:"第十六章 数据分发和分布式数据管理", q:"数据分片（fragmentation）的含义是？", options:["把关系或数据集合拆分到不同片段存放","把每个字段都加密","把所有副本放在同一磁盘页","删除元数据"], answer:0, exp:"分片可按水平、垂直或混合方式分布数据。"},
+      {chapter:"第十六章 数据分发和分布式数据管理", q:"数据复制的直接好处通常包括？", options:["提高可用性和本地访问性能","自动消除所有一致性问题","永远减少存储空间","不再需要网络"], answer:0, exp:"复制提升可用性和性能，但会带来一致性维护成本。"},
+      {chapter:"第十六章 数据分发和分布式数据管理", q:"分布式事务常用两阶段提交协议的目的是什么？", options:["协调多个站点共同提交或回滚","实现 XML 节点定位","创建位图索引","压缩日志"], answer:0, exp:"2PC 通过准备和提交阶段协调参与者，保证事务结果一致。"},
+      {chapter:"第十七章 数据仓库和商业智能", q:"数据仓库的典型特点是？", options:["面向主题、集成、相对稳定、随时间变化","只保存当前事务的临时锁","只能保存 XML 文档","只能由一个用户访问"], answer:0, exp:"数据仓库服务分析决策，强调主题性、集成性、非易失性和时间变化。"},
+      {chapter:"第十七章 数据仓库和商业智能", q:"ETL 过程包括什么？", options:["抽取、转换、加载","加密、测试、登录","实体、事务、日志","评估、训练、预测"], answer:0, exp:"ETL 将多源数据抽取出来，清洗转换后加载到目标仓库。"},
+      {chapter:"第十七章 数据仓库和商业智能", q:"OLAP 更适合哪类工作负载？", options:["多维分析和决策支持查询","高频单行事务更新","操作系统内存分配","网页动画渲染"], answer:0, exp:"OLAP 面向分析型、多维聚合和决策支持。"},
+      {chapter:"第十八章 数据集成、数据质量和数据治理", q:"数据集成的核心目标是？", options:["把多来源数据整合为一致、可使用的信息资源","让每个系统保持完全孤立","删除所有元数据","只保留纸质记录"], answer:0, exp:"数据集成处理多源异构数据的一致访问和统一使用。"},
+      {chapter:"第十八章 数据集成、数据质量和数据治理", q:"数据质量常见维度包括？", options:["准确性、完整性、一致性、及时性","颜色、字号、动画、页边距","锁数、页数、线程数、端口号","只包括数据量大小"], answer:0, exp:"数据质量评价通常关注准确、完整、一致、及时等维度。"},
+      {chapter:"第十八章 数据集成、数据质量和数据治理", q:"数据治理最关注的是？", options:["决策权、责任、政策、标准和合规机制","只买更多服务器","只写更多 SQL","只压缩数据库文件"], answer:0, exp:"数据治理建立组织层面的数据决策和责任框架。"},
+      {chapter:"第十九章 大数据", q:"大数据常用 5V 特征不包括下列哪项？", options:["Velocity","Volume","Variety","Vacuum"], answer:3, exp:"常见 5V 包括 Volume、Velocity、Variety、Veracity、Value；Vacuum 不是大数据 5V。"},
+      {chapter:"第十九章 大数据", q:"Hadoop/HDFS 适合处理什么场景？", options:["大规模分布式文件存储和批处理","单机桌面排版","浏览器 Cookie 管理","纯手工数据录入"], answer:0, exp:"HDFS 提供分布式文件存储，常与 MapReduce 等批处理框架结合。"},
+      {chapter:"第十九章 大数据", q:"Spark 相对传统 MapReduce 的重要特点是？", options:["支持内存计算和更丰富的数据处理 API","只能运行 SQL DDL","不能处理流数据","必须放弃所有分布式计算"], answer:0, exp:"Spark 通过 RDD/DataFrame 等抽象支持高效内存计算和流/批处理。"},
+      {chapter:"第二十章 分析技术", q:"描述性分析主要回答什么问题？", options:["发生了什么","为什么数据库文件损坏","下一台服务器叫什么","如何设置显示器亮度"], answer:0, exp:"描述性分析总结历史事实和当前状态。"},
+      {chapter:"第二十章 分析技术", q:"预测性分析主要用于？", options:["基于历史数据预测未来结果或趋势","只格式化报表字体","执行事务回滚","创建数据库用户"], answer:0, exp:"预测性分析利用统计和机器学习模型估计未来。"},
+      {chapter:"第二十章 分析技术", q:"分类任务的输出通常是？", options:["离散类别标签","连续物理地址","SQL 表空间文件","事务锁表"], answer:0, exp:"分类模型将样本分配到离散类别；回归通常预测连续数值。"},
+      {chapter:"第二十章 分析技术", q:"聚类分析通常属于哪类学习？", options:["无监督学习","强制事务提交","关系完整性检查","查询授权"], answer:0, exp:"聚类在没有预先类别标签的情况下发现相似对象分组。"}
+    ];
+
+    function seededShuffle(items, seed) {
+      const copy = items.slice();
+      let value = seed + 37;
+      for (let i = copy.length - 1; i > 0; i--) {
+        value = (value * 1664525 + 1013904223) >>> 0;
+        const j = value % (i + 1);
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    const QUESTION_BANK = RAW_QUESTION_BANK.map((question, index) => {
+      const keyedOptions = question.options.map((text, optionIndex) => ({
+        text,
+        isCorrect: optionIndex === question.answer
+      }));
+      const shuffled = seededShuffle(keyedOptions, index);
+      return {
+        ...question,
+        options: shuffled.map(option => option.text),
+        answer: shuffled.findIndex(option => option.isCorrect)
+      };
+    });
+
+    const state = {
+      mode: "exam",
+      examQuestions: [],
+      visibleQuestions: [],
+      answers: new Map(),
+      graded: false,
+      showAnswers: false
+    };
+
+    const els = {
+      tabExam: document.getElementById("tabExam"),
+      tabBank: document.getElementById("tabBank"),
+      chapterFilter: document.getElementById("chapterFilter"),
+      newExamBtn: document.getElementById("newExamBtn"),
+      gradeBtn: document.getElementById("gradeBtn"),
+      showAnswersBtn: document.getElementById("showAnswersBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      questions: document.getElementById("questions"),
+      resultBox: document.getElementById("resultBox"),
+      totalCount: document.getElementById("totalCount"),
+      currentCount: document.getElementById("currentCount"),
+      answeredCount: document.getElementById("answeredCount"),
+      correctCount: document.getElementById("correctCount"),
+      wrongCount: document.getElementById("wrongCount"),
+      scoreCount: document.getElementById("scoreCount"),
+      modeTitle: document.getElementById("modeTitle"),
+      modeHint: document.getElementById("modeHint"),
+      chapterOverview: document.getElementById("chapterOverview")
+    };
+
+    function shuffle(items) {
+      const copy = items.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function optionLetter(index) {
+      return ["A", "B", "C", "D"][index];
+    }
+
+    function buildChapterFilter() {
+      const chapters = [...new Set(QUESTION_BANK.map(item => item.chapter))];
+      els.chapterFilter.innerHTML = [
+        '<option value="all">全部章节</option>',
+        ...chapters.map(chapter => `<option value="${chapter}">${chapter}</option>`)
+      ].join("");
+
+      const counts = chapters.map(chapter => {
+        const count = QUESTION_BANK.filter(q => q.chapter === chapter).length;
+        return `<div class="chapter-tile"><strong>${chapter}</strong><span>${count} 道题</span></div>`;
+      });
+      els.chapterOverview.innerHTML = counts.join("");
+    }
+
+    function newExam() {
+      const selectedChapter = els.chapterFilter.value;
+      const pool = selectedChapter === "all"
+        ? QUESTION_BANK
+        : QUESTION_BANK.filter(q => q.chapter === selectedChapter);
+      state.examQuestions = shuffle(pool).slice(0, Math.min(20, pool.length));
+      state.answers.clear();
+      state.graded = false;
+      state.showAnswers = false;
+      render();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      state.answers.clear();
+      state.graded = false;
+      state.showAnswers = false;
+      if (mode === "exam" && state.examQuestions.length === 0) {
+        newExam();
+        return;
+      }
+      render();
+    }
+
+    function currentQuestions() {
+      if (state.mode === "exam") return state.examQuestions;
+      const selectedChapter = els.chapterFilter.value;
+      return selectedChapter === "all"
+        ? QUESTION_BANK
+        : QUESTION_BANK.filter(q => q.chapter === selectedChapter);
+    }
+
+    function grade() {
+      state.graded = true;
+      state.showAnswers = true;
+      render();
+    }
+
+    function computeStats(questions) {
+      let correct = 0;
+      let wrong = 0;
+      let unanswered = 0;
+      questions.forEach((question, index) => {
+        const selected = state.answers.get(index);
+        if (selected === undefined) unanswered += 1;
+        else if (selected === question.answer) correct += 1;
+        else wrong += 1;
+      });
+      return {
+        correct,
+        wrong,
+        unanswered,
+        answered: correct + wrong,
+        score: correct - wrong * 0.33
+      };
+    }
+
+    function renderStats(questions) {
+      const stats = computeStats(questions);
+      els.totalCount.textContent = QUESTION_BANK.length;
+      els.currentCount.textContent = questions.length;
+      els.answeredCount.textContent = stats.answered;
+      els.correctCount.textContent = state.graded ? stats.correct : "-";
+      els.wrongCount.textContent = state.graded ? stats.wrong : "-";
+      els.scoreCount.textContent = state.graded ? stats.score.toFixed(2) : "-";
+    }
+
+    function renderResult(questions) {
+      if (!state.graded) {
+        els.resultBox.classList.remove("show");
+        els.resultBox.innerHTML = "";
+        return;
+      }
+      const stats = computeStats(questions);
+      const maxScore = state.mode === "exam" ? questions.length : questions.length;
+      els.resultBox.innerHTML = `
+        <div class="score-big">${stats.score.toFixed(2)} / ${maxScore}</div>
+        <div>正确 ${stats.correct} 题，错误 ${stats.wrong} 题，未答 ${stats.unanswered} 题。</div>
+        <div class="hint">计分公式：${stats.correct} × 1 - ${stats.wrong} × 0.33 = ${stats.score.toFixed(2)}。未答不扣分。</div>
+      `;
+      els.resultBox.classList.add("show");
+    }
+
+    function renderQuestions(questions) {
+      els.questions.innerHTML = questions.map((question, index) => {
+        const selected = state.answers.get(index);
+        const answerVisible = state.showAnswers || state.graded;
+        const status = selected === undefined
+          ? '<span class="warn">未答</span>'
+          : selected === question.answer
+            ? '<span class="correct">正确</span>'
+            : '<span class="wrong">错误</span>';
+        const options = question.options.map((option, optionIndex) => {
+          const checked = selected === optionIndex ? "checked" : "";
+          return `
+            <label class="option">
+              <input type="radio" name="q${index}" value="${optionIndex}" ${checked}>
+              <span><strong>${optionLetter(optionIndex)}.</strong> ${option}</span>
+            </label>
+          `;
+        }).join("");
+
+        return `
+          <article class="question">
+            <div class="q-meta">
+              <span class="tag">${question.chapter}</span>
+              <span>第 ${index + 1} 题</span>
+              ${state.graded ? `<span>${status}</span>` : ""}
+            </div>
+            <div class="q-title">${question.q}</div>
+            <div class="options" data-question="${index}">${options}</div>
+            <div class="answer ${answerVisible ? "show" : ""}">
+              <strong>答案：${optionLetter(question.answer)}.</strong> ${question.options[question.answer]}<br>
+              <span class="hint">${question.exp}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      els.questions.querySelectorAll('input[type="radio"]').forEach(input => {
+        input.addEventListener("change", event => {
+          const wrapper = event.target.closest(".options");
+          state.answers.set(Number(wrapper.dataset.question), Number(event.target.value));
+          state.graded = false;
+          renderStats(questions);
+          els.resultBox.classList.remove("show");
+        });
+      });
+    }
+
+    function render() {
+      els.tabExam.classList.toggle("active", state.mode === "exam");
+      els.tabBank.classList.toggle("active", state.mode === "bank");
+      els.newExamBtn.hidden = state.mode !== "exam";
+      els.gradeBtn.textContent = state.mode === "exam" ? "交卷评分" : "检查练习";
+      els.modeTitle.textContent = state.mode === "exam" ? "模拟考试" : "题库练习";
+      els.modeHint.textContent = state.mode === "exam"
+        ? "随机 20 题；提交后显示得分和解析。"
+        : "可按章节筛选，随时检查答案。";
+      els.chapterOverview.hidden = state.mode !== "bank";
+
+      const questions = currentQuestions();
+      state.visibleQuestions = questions;
+      renderStats(questions);
+      renderResult(questions);
+      renderQuestions(questions);
+    }
+
+    els.tabExam.addEventListener("click", () => setMode("exam"));
+    els.tabBank.addEventListener("click", () => setMode("bank"));
+    els.newExamBtn.addEventListener("click", newExam);
+    els.gradeBtn.addEventListener("click", grade);
+    els.showAnswersBtn.addEventListener("click", () => {
+      state.showAnswers = !state.showAnswers;
+      render();
+    });
+    els.resetBtn.addEventListener("click", () => {
+      state.answers.clear();
+      state.graded = false;
+      state.showAnswers = false;
+      render();
+    });
+    els.chapterFilter.addEventListener("change", () => {
+      if (state.mode === "exam") newExam();
+      else {
+        state.answers.clear();
+        state.graded = false;
+        state.showAnswers = false;
+        render();
+      }
+    });
+
+    buildChapterFilter();
+    newExam();
+  </script>
+</body>
+</html>
